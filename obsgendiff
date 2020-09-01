@@ -84,8 +84,8 @@ for report in /.build.packages/OTHER/*.report \
 
   # create archive
   pushd $out
-  gendiff=${report%.report}.obsgendiff
-  gendiff=${report%.packages}.obsgendiff
+  gendiff=${report%.report}
+  gendiff=${gendiff%.packages}.obsgendiff
   tar cfJ /.build.packages/OTHER/${gendiff##*/} .
   popd
 
