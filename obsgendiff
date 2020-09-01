@@ -1,0 +1,132 @@
+#!/bin/bash
+
+# Copyright (c) 2020 Adrian Schröter <adrian@suse.de>
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Library General Public
+# License as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later version.
+#
+# This library  is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Library General Public License for more details.
+#
+# You should have received a copy of the GNU Library General Public
+# License along with this library; see the file COPYING.LIB. If not,
+# write to the Free Software Foundation, Inc., 59 Temple Place,
+# Suite 330, Boston, MA  02111-1307, USA
+
+#
+# This just basic demo code for now, to be rewritten/completed later
+#
+
+
+# our outut directory
+out=/.build.packages/obsgendiff
+# the former output of last released build
+released=/.build.packages/obsgendiff.released
+
+eol=$'\n'
+
+echo "Running obsgendiff data differ..."
+
+# create changelogs based on the packaged rpms
+mkdir -p $out/{changelogs,disturl}
+for report in /.build.packages/OTHER/*.report /.build.packages/KIWI/*.packages; do
+  [ -e "$report" ] || continue
+
+  # skip source and debug media
+  [ "$report" = "${report/-Media2/}" ] || continue
+  [ "$report" = "${report/-Media3/}" ] || continue
+
+  # we need to be able to handle .packages from kiwi appliances
+  # and .report files from product builds. Check which case we have.
+  unset PACKAGES_MODE
+  [ "$report" == "${report%.packages}" ] || PACKAGES_MODE=1
+
+  # find and extract right obsgendiff archive
+  oldobsgendiff=${report%.report}.obsgendiff
+  oldobsgendiff=/.build.packages/SOURCES/${oldobsgendiff##*/}
+  # find old build number:
+  oldobsgendiff=`echo ${oldobsgendiff/-Build*-/-Build*-}`
+  if [ -e "$oldobsgendiff" ]; then
+    echo "Extracting $oldobsgendiff"
+    mkdir -p "${released}"
+    tar xf "$oldobsgendiff" -C "${released}"
+  else
+    echo "WARNING no old obsgendiff found: $oldobsgendiff"
+  fi
+
+  # REGEXP gets the DISTURL only
+  REGEXP='s,.*<binary .*\(obs://.*\)</binary>,\1,p'
+  [ -n "$PACKAGES_MODE" ] && REGEXP='s,.*|\(obs://.*\)|.*,\1,p'
+  sed -n -e "$REGEXP" "$report" | while read disturl; do
+
+     # rpm file name
+     rpm="${disturl##*/}"
+     # rpm name only (%NAME)
+     name="${rpm%-*}"
+     name="${name%-*}"
+
+     # only the worker knows where it was downloaded from....
+     # the disturl may contained a different build repo
+     file=`echo /.build.packages/SOURCES/repos/*/*/*/$rpm`
+     file="${file//${eol}*/}" # bash internal "head -n 1" to be faster
+
+     # dump changelog and disturl for each rpm NAME
+     LC_ALL=C.UTF-8 rpm -qp "$file" --changelog --nodigest --nosignature 2>/dev/null > $out/changelogs/${name}
+     echo "$disturl" > $out/disturl/${name}
+  done
+
+  # create archive
+  pushd $out
+  gendiff=${report%.report}.obsgendiff
+  gendiff=${report%.packages}.obsgendiff
+  tar cfJ /.build.packages/OTHER/${gendiff##*/} .
+  popd
+
+  #
+  # All data is collected at this point
+  # Just generating the changelog files below.
+  #
+
+  # create diff to released archive
+  # NOTE: it had to be published or it won't exist
+  if [ -d "${released}" ]; then
+    # The OBS publisher is publishing all ChangeLog.*.txt files by default.
+    changelog=/.build.packages/OTHER/ChangeLog.${report##*/}
+    changelog=${changelog%.report}.txt
+    changelog=${changelog%.packages}.txt
+    echo ""> $changelog
+  
+    # removed packages
+    echo "Removed packages">> $changelog
+    echo "================">> $changelog
+    echo "">> $changelog
+  
+    find "$released/changelogs/" -type f | sort | sed "s,^$released/changelogs/,," | while read file; do
+      [ -e "${out}/changelogs/$file" ] || echo " - ${file##*::}" >> $changelog
+    done
+    echo "">> $changelog
+  
+    # new packages
+    echo "New packages">> $changelog
+    echo "============">> $changelog
+    echo "">> $changelog
+    find "$out/changelogs/" -type f | sort | sed "s,^$out/changelogs/,," | while read file; do
+      [ -e "${released}/changelogs/$file" ] || echo " - ${file##*::}" >> $changelog
+    done
+    echo "">> $changelog
+  
+    # changed packages
+    echo "Package updates">> $changelog
+    echo "===============">> $changelog
+    echo "">> $changelog
+    # poor mans changelog generation
+    diff -ur "${released}/changelogs/" "$out/changelogs/" | grep -v '^Only in ' | grep '^[+-]' | grep -v '^--- ' | sed 's,^+++ .*/\([^\t]*\).*$,\1,' >> $changelog
+  fi
+
+done
+exit 0
+
