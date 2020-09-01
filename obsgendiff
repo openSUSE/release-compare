@@ -51,7 +51,8 @@ for report in /.build.packages/OTHER/*.report \
   # find and extract right obsgendiff archive
   oldobsgendiff=${report%.report}.obsgendiff
   oldobsgendiff=/.build.packages/SOURCES/${oldobsgendiff##*/}
-  # find old build number:
+  # find old obsgendiff with different build number.
+  # A different version or rename is not supported atm:
   oldobsgendiff=`echo ${oldobsgendiff/-Build*-/-Build*-}`
   if [ -e "$oldobsgendiff" ]; then
     echo "Extracting $oldobsgendiff"
