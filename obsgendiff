@@ -33,7 +33,10 @@ echo "Running obsgendiff data differ..."
 
 # create changelogs based on the packaged rpms
 mkdir -p $out/{changelogs,disturl}
-for report in /.build.packages/OTHER/*.report /.build.packages/KIWI/*.packages; do
+for report in /.build.packages/OTHER/*.report \
+  /.build.packages/KIWI/*.packages \
+  /.build.packages/DOCKER/*.packages; do
+
   [ -e "$report" ] || continue
 
   # skip source and debug media
