@@ -49,11 +49,17 @@ for report in /.build.packages/OTHER/*.report \
   [ "$report" == "${report%.packages}" ] || PACKAGES_MODE=1
 
   # find and extract right obsgendiff archive
-  oldobsgendiff=${report%.report}.obsgendiff
+  oldobsgendiff=${report%.packages}
+  oldobsgendiff=${oldobsgendiff%.report}.obsgendiff
   oldobsgendiff=/.build.packages/SOURCES/${oldobsgendiff##*/}
   # find old obsgendiff with different build number.
-  # A different version or rename is not supported atm:
+  # try to find a matching name and version first
   oldobsgendiff=`echo ${oldobsgendiff/-Build*-/-Build*-}`
+  if [ ! -e "$oldobsgendiff" ]; then
+    # try to guess where the version is in the string, no guarantee
+    oldobsgendiff=`echo $oldobsgendiff | sed 's,-[0123456789.]*-,-[0123456789\.]*-,'`
+    oldobsgendiff=`echo $oldobsgendiff`
+  fi
   if [ -e "$oldobsgendiff" ]; then
     echo "Extracting $oldobsgendiff"
     mkdir -p "${released}"
