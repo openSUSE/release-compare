@@ -88,7 +88,8 @@ for report in /.build.packages/OTHER/*.report \
      file="${file//${eol}*/}" # bash internal "head -n 1" to be faster
 
      # dump changelog for into source package name to avoid duplicates
-     LC_ALL=C.UTF-8 rpm -qp "$file" --changelog --nodigest --nosignature 2>/dev/null > $out/changelogs/${srcname}
+     # hide "first" lines to hide email adresses
+     LC_ALL=C.UTF-8 rpm -qp "$file" --changelog --nodigest --nosignature 2>/dev/null | sed '/^\* .*@.*/d' > $out/changelogs/${srcname}
   done
 
   # create archive
