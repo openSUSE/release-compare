@@ -108,7 +108,7 @@ for report in /.build.packages/OTHER/*.report \
   if [ -d "${released}" ]; then
     # The OBS publisher is publishing all ChangeLog.*.txt files by default.
     changelog=/.build.packages/OTHER/ChangeLog.${report##*/}
-    changelog=${changelog%.report}.txt
+    changelog=${changelog%.report}
     changelog=${changelog%.packages}.txt
     echo ""> $changelog
   
