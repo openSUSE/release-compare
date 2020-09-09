@@ -32,7 +32,7 @@ eol=$'\n'
 echo "Running obsgendiff data differ..."
 
 # create changelogs based on the packaged rpms
-mkdir -p $out/{changelogs,disturl}
+mkdir -p $out/changelogs
 for report in /.build.packages/OTHER/*.report \
   /.build.packages/KIWI/*.packages \
   /.build.packages/DOCKER/*.packages; do
@@ -69,24 +69,22 @@ for report in /.build.packages/OTHER/*.report \
   fi
 
   # REGEXP gets the DISTURL only
-  REGEXP='s,.*<binary .*\(obs://.*\)</binary>,\1,p'
-  [ -n "$PACKAGES_MODE" ] && REGEXP='s,.*|\(obs://.*\)|.*,\1,p'
-  sed -n -e "$REGEXP" "$report" | while read disturl; do
+  REGEXP='s,.*<binary .*disturl="obs://[^-]*-\([^"]*\)".*>.*/\(.*\)</binary>$,\1::::\2,p'
+  [ -n "$PACKAGES_MODE" ] && REGEXP='s,\([^|]*\)|\([^|]*\)|\([^|]*\)|\([^|]*\)|\([^|]*\)|obs://[^-]*-\([^|]*\)|.*,\6::::\1-\3-\4.\5.rpm,p''
+  sed -n -e "$REGEXP" "$report" | while read line; do
 
      # rpm file name
-     rpm="${disturl##*/}"
-     # rpm name only (%NAME)
-     name="${rpm%-*}"
-     name="${name%-*}"
+     rpm="${line##*::::}"
+     # source package name
+     srcname="${line%::::*}"
 
      # only the worker knows where it was downloaded from....
      # the disturl may contained a different build repo
      file=`echo /.build.packages/SOURCES/repos/*/*/*/$rpm`
      file="${file//${eol}*/}" # bash internal "head -n 1" to be faster
 
-     # dump changelog and disturl for each rpm NAME
-     LC_ALL=C.UTF-8 rpm -qp "$file" --changelog --nodigest --nosignature 2>/dev/null > $out/changelogs/${name}
-     echo "$disturl" > $out/disturl/${name}
+     # dump changelog for into source package name to avoid duplicates
+     LC_ALL=C.UTF-8 rpm -qp "$file" --changelog --nodigest --nosignature 2>/dev/null > $out/changelogs/${srcname}
   done
 
   # create archive
