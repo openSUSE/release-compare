@@ -56,6 +56,10 @@ for report in /.build.packages/OTHER/*.report \
   # try to find a matching name and version first
   oldobsgendiff=`echo ${oldobsgendiff/-Build*-/-Build*-}`
   if [ ! -e "$oldobsgendiff" ]; then
+    # Factory fallback, it gets named to custom -Snapshot file name
+    oldobsgendiff=`echo ${oldobsgendiff/-Build*-/-Snapshot*-}`
+  fi
+  if [ ! -e "$oldobsgendiff" ]; then
     # try to guess where the version is in the string, no guarantee
     oldobsgendiff=`echo $oldobsgendiff | sed 's,-[0123456789.]*-,-[0123456789\.]*-,'`
     oldobsgendiff=`echo $oldobsgendiff`
