@@ -32,7 +32,7 @@ eol=$'\n'
 echo "Running obsgendiff data differ..."
 
 # create changelogs based on the packaged rpms
-mkdir -p $out/changelogs
+mkdir -p $out/{rpms,changelogs}
 for report in /.build.packages/OTHER/*.report \
   /.build.packages/KIWI/*.packages \
   /.build.packages/DOCKER/*.packages; do
@@ -74,11 +74,12 @@ for report in /.build.packages/OTHER/*.report \
 
   # REGEXP gets the DISTURL only
   REGEXP='s,.*<binary .*disturl="obs://[^-]*-\([^"]*\)".*>.*/\(.*\)</binary>$,\1::::\2,p'
-  [ -n "$PACKAGES_MODE" ] && REGEXP='s,\([^|]*\)|\([^|]*\)|\([^|]*\)|\([^|]*\)|\([^|]*\)|obs://[^-]*-\([^|]*\)|.*,\6::::\1-\3-\4.\5.rpm,p''
+  [ -n "$PACKAGES_MODE" ] && REGEXP='s,\([^|]*\)|\([^|]*\)|\([^|]*\)|\([^|]*\)|\([^|]*\)|obs://[^-]*-\([^|]*\)|.*,\6::::\1-\3-\4.\5.rpm,p'
   sed -n -e "$REGEXP" "$report" | while read line; do
 
      # rpm file name
      rpm="${line##*::::}"
+     rpm_name=${rpm%-[^-]*-[^-]*.rpm}
      # source package name
      srcname="${line%::::*}"
 
@@ -90,6 +91,7 @@ for report in /.build.packages/OTHER/*.report \
      # dump changelog for into source package name to avoid duplicates
      # hide "first" lines to hide email adresses
      LC_ALL=C.UTF-8 rpm -qp "$file" --changelog --nodigest --nosignature 2>/dev/null | sed '/^\* .*@.*/d' > $out/changelogs/${srcname}
+     touch $outs/rpms/${rpm_name}
   done
 
   # create archive
@@ -118,8 +120,8 @@ for report in /.build.packages/OTHER/*.report \
     echo "================">> $changelog
     echo "">> $changelog
   
-    find "$released/changelogs/" -type f | sort | sed "s,^$released/changelogs/,," | while read file; do
-      [ -e "${out}/changelogs/$file" ] || echo " - ${file##*::}" >> $changelog
+    find "$released/rpms/" -type f | sort | sed "s,^$released/rpms/,," | while read file; do
+      [ -e "${out}/rpms/$file" ] || echo " - ${file##*::}" >> $changelog
     done
     echo "">> $changelog
   
@@ -127,12 +129,12 @@ for report in /.build.packages/OTHER/*.report \
     echo "New packages">> $changelog
     echo "============">> $changelog
     echo "">> $changelog
-    find "$out/changelogs/" -type f | sort | sed "s,^$out/changelogs/,," | while read file; do
-      [ -e "${released}/changelogs/$file" ] || echo " - ${file##*::}" >> $changelog
+    find "$out/rpms/" -type f | sort | sed "s,^$out/rpms/,," | while read file; do
+      [ -e "${released}/rpms/$file" ] || echo " - ${file##*::}" >> $changelog
     done
     echo "">> $changelog
   
-    # changed packages
+    # changed packages based on used src rpm name only
     echo "Package updates">> $changelog
     echo "===============">> $changelog
     echo "">> $changelog
