@@ -91,7 +91,7 @@ for report in /.build.packages/OTHER/*.report \
      # dump changelog for into source package name to avoid duplicates
      # hide "first" lines to hide email adresses
      LC_ALL=C.UTF-8 rpm -qp "$file" --changelog --nodigest --nosignature 2>/dev/null | sed '/^\* .*@.*/d' > $out/changelogs/${srcname}
-     touch $outs/rpms/${rpm_name}
+     touch $out/rpms/${rpm_name}
   done
 
   # create archive
