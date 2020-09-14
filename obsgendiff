@@ -77,9 +77,9 @@ for report in /.build.packages/OTHER/*.report \
   fi
 
   # REGEXP gets the DISTURL only
-  REGEXP='s,.*<binary .*disturl="obs://[^-]*-\([^"]*\)".*>.*/\(.*\)</binary>$,\1::::\2,p'
-  [ -n "$PACKAGES_MODE" ] && REGEXP='s,\([^|]*\)|\([^|]*\)|\([^|]*\)|\([^|]*\)|\([^|]*\)|obs://[^-]*-\([^|]*\)|.*,\6::::\1-\3-\4.\5.rpm,p'
-  sed -n -e "$REGEXP" "$report" | while read line; do
+  REGEXP='-e s,.*<binary .*disturl="obs://[^-]*-\([^"]*\)".*>.*/\(.*\)</binary>$,\1::::\2,p'
+  [ -n "$PACKAGES_MODE" ] && REGEXP='-e s,\([^|]*\)|\([^|]*\)|\([^|]*\)|\([^|]*\)|\([^|]*\)|obs://[^-]*-\([^|]*\)|.*,\6::::\1-\3-\4.\5.rpm, -e 's,^obs://.*/[^-]*-,,p''
+  sed -n $REGEXP "$report" | while read line; do
 
      # rpm file name
      rpm="${line##*::::}"
