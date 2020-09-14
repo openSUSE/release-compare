@@ -56,6 +56,9 @@ for report in /.build.packages/OTHER/*.report \
   # try to find a matching name and version first
   if [ "${oldobsgendiff/-Build*-/}" != "$oldobsgendiff" ]; then
     oldobsgendiff=`echo ${oldobsgendiff/-Build*-/-Build*-}`
+  elif [ "${oldobsgendiff/-Build*./}" != "$oldobsgendiff" ]; then
+    # kiwi appliance
+    oldobsgendiff=`echo ${oldobsgendiff/-Build*./-Build*.}`
   elif [ "${oldobsgendiff/-Snapshot*-/}" != "$oldobsgendiff" ]; then
     # Factory fallback, it gets named to custom -Snapshot file name
     oldobsgendiff=`echo ${oldobsgendiff/-Build*-/-Snapshot*-}`
