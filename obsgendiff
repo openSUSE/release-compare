@@ -54,10 +54,14 @@ for report in /.build.packages/OTHER/*.report \
   oldobsgendiff=/.build.packages/SOURCES/${oldobsgendiff##*/}
   # find old obsgendiff with different build number.
   # try to find a matching name and version first
-  oldobsgendiff=`echo ${oldobsgendiff/-Build*-/-Build*-}`
-  if [ ! -e "$oldobsgendiff" ]; then
+  if [ "${oldobsgendiff/-Build*-/}" != "$oldobsgendiff" ]; then
+    oldobsgendiff=`echo ${oldobsgendiff/-Build*-/-Build*-}`
+  elif [ "${oldobsgendiff/-Snapshot*-/}" != "$oldobsgendiff" ]; then
     # Factory fallback, it gets named to custom -Snapshot file name
     oldobsgendiff=`echo ${oldobsgendiff/-Build*-/-Snapshot*-}`
+  else
+    # Dropped build number fallback (eg Jump ftp tree)
+    oldobsgendiff=`echo ${oldobsgendiff/-Media1./-Build*-Media1.}`
   fi
   if [ ! -e "$oldobsgendiff" ]; then
     # try to guess where the version is in the string, no guarantee
