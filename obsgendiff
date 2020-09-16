@@ -79,10 +79,12 @@ for report in /.build.packages/OTHER/*.report \
     echo "WARNING no old obsgendiff found: $oldobsgendiff"
   fi
 
-  # REGEXP gets the DISTURL only
-  REGEXP='-e s,.*<binary .*disturl="obs://[^-]*-\([^"]*\)".*>.*/\(.*\)</binary>$,\1::::\2,p'
-  [ -n "$PACKAGES_MODE" ] && REGEXP='-e s,\([^|]*\)|\([^|]*\)|\([^|]*\)|\([^|]*\)|\([^|]*\)|\(obs://[^-]*-[^|]*\)|.*,\6::::\1-\3-\4.\5.rpm, -e s,^obs://.*/[^-]*-,,p'
-  sed -n $REGEXP "$report" | while read line; do
+  if [ -n "$PACKAGES_MODE" ]; then
+    sed -n -e "s,\([^|]*\)|\([^|]*\)|\([^|]*\)|\([^|]*\)|\([^|]*\)|\(obs://[^-]*-[^|]*\)|.*,\6::::\1-\3-\4.\5.rpm," -e "s,^obs://.*/[^-]*-,,p" "$report"
+  else
+   # product-builder uses ', but bs_worker writes it with "...
+   sed -n -e "s,.*<binary .*disturl=.obs://[^-]*-\([^ ]*\). .*>.*/\(.*\)</binary>$,\1::::\2," -e 's,.*/[^-]*-\(.*::::.*\),\1,p' "$report"
+  fi | while read line; do
 
      # rpm file name
      rpm="${line##*::::}"
