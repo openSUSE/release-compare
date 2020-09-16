@@ -152,6 +152,7 @@ for report in /.build.packages/OTHER/*.report \
     | grep -v '^Only in ' \
     | grep '^[+-]' \
     | grep -v '^--- ' \
+    | egrep -v '^-* ??? ??? ?? ???? *@*' \
     | sed -e's,^+++ .*/\([^\t]*\).*$,\1,' -e 's,^::import::.*::,,' \
     >> $changelog
   fi
