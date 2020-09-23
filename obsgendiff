@@ -91,6 +91,8 @@ for report in /.build.packages/OTHER/*.report \
      rpm_name=${rpm%-[^-]*-[^-]*.rpm}
      # source package name
      srcname="${line%::::*}"
+     # strip dot suffix from maintenance incidents
+     srcname="${srcname%%.*}"
 
      # only the worker knows where it was downloaded from....
      # the disturl may contained a different build repo
@@ -152,7 +154,6 @@ for report in /.build.packages/OTHER/*.report \
     | grep -v '^Only in ' \
     | grep '^[+-]' \
     | grep -v '^--- ' \
-    | egrep -v '^-* ??? ??? ?? ???? *@*' \
     | sed -e's,^+++ .*/\([^\t]*\).*$,\1,' -e 's,^::import::.*::,,' \
     >> $changelog
   fi
