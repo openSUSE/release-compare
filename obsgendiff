@@ -66,10 +66,13 @@ for report in /.build.packages/OTHER/*.report \
     # Dropped build number fallback (eg Jump ftp tree)
     oldobsgendiff=`echo ${oldobsgendiff/-Media1./-Build*-Media1.}`
   fi
+  # take last one if multiple
+  oldobsgendiff="${oldobsgendiff##* }"
   if [ ! -e "$oldobsgendiff" ]; then
     # try to guess where the version is in the string, no guarantee
     oldobsgendiff=`echo $oldobsgendiff | sed 's,-[0123456789.]*-,-[0123456789\.]*-,'`
     oldobsgendiff=`echo $oldobsgendiff`
+    oldobsgendiff="${oldobsgendiff##* }"
   fi
   if [ -e "$oldobsgendiff" ]; then
     echo "Extracting $oldobsgendiff"
