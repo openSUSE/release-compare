@@ -131,7 +131,7 @@ for report in /.build.packages/OTHER/*.report \
   
     # removed packages
     echo "Removed rpms">> $changelog
-    echo "============ $changelog
+    echo "============">> $changelog
     echo "">> $changelog
   
     find "$released/rpms/" -type f | sort | sed "s,^$released/rpms/,," | while read file; do
@@ -141,7 +141,7 @@ for report in /.build.packages/OTHER/*.report \
   
     # new packages
     echo "Added rpms">> $changelog
-    echo "========== $changelog
+    echo "==========">> $changelog
     echo "">> $changelog
     find "$out/rpms/" -type f | sort | sed "s,^$out/rpms/,," | while read file; do
       [ -e "${released}/rpms/$file" ] || echo " - ${file##*::}" >> $changelog
