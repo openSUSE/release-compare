@@ -40,12 +40,12 @@ Note: you need to use a releasetarget definition in your OBS repository
 %build
 
 %install
-mkdir -p $RPM_BUILD_ROOT/usr/lib/build/ $RPM_BUILD_ROOT/%_defaultdocdir/%name
-install -m 0755 obsgendiff $RPM_BUILD_ROOT/usr/lib/build/
+mkdir -p $RPM_BUILD_ROOT/usr/lib/build/obsgendiff.d $RPM_BUILD_ROOT/%_defaultdocdir/%name
+install -m 0755 create_changelog $RPM_BUILD_ROOT/usr/lib/build/obsgendiff.d/
 
 %check
 # basic syntax check
-bash -n $RPM_BUILD_ROOT/usr/lib/build/obsgendiff || exit 1
+bash -n $RPM_BUILD_ROOT/usr/lib/build/obsgendiff.d/create_changelog || exit 1
 
 %files
 %license LICENSE
