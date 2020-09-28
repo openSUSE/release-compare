@@ -164,12 +164,5 @@ for report in /.build.packages/OTHER/*.report \
 done
 
 
-# This should maybe go to the build script?
-if test -d "/usr/lib/build/obsgendiff.d"; then
- for script in /usr/lib/build/obsgendiff.d/*; do
-    [ -x "$script" ] && $script
- done
-fi
-
 exit 0
 
