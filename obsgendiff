@@ -130,8 +130,8 @@ for report in /.build.packages/OTHER/*.report \
     echo ""> $changelog
   
     # removed packages
-    echo "Removed packages">> $changelog
-    echo "================">> $changelog
+    echo "Removed rpms">> $changelog
+    echo "============ $changelog
     echo "">> $changelog
   
     find "$released/rpms/" -type f | sort | sed "s,^$released/rpms/,," | while read file; do
@@ -140,8 +140,8 @@ for report in /.build.packages/OTHER/*.report \
     echo "">> $changelog
   
     # new packages
-    echo "New packages">> $changelog
-    echo "============">> $changelog
+    echo "Added rpms">> $changelog
+    echo "========== $changelog
     echo "">> $changelog
     find "$out/rpms/" -type f | sort | sed "s,^$out/rpms/,," | while read file; do
       [ -e "${released}/rpms/$file" ] || echo " - ${file##*::}" >> $changelog
@@ -149,8 +149,8 @@ for report in /.build.packages/OTHER/*.report \
     echo "">> $changelog
   
     # changed packages based on used src rpm name only
-    echo "Package updates">> $changelog
-    echo "===============">> $changelog
+    echo "Package Source Changes">> $changelog
+    echo "======================">> $changelog
     echo "">> $changelog
     # poor mans changelog generation
     diff -ur "${released}/changelogs/" "$out/changelogs/" \
