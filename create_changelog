@@ -29,6 +29,17 @@ released=/.build.packages/obsgendiff.released
 
 eol=$'\n'
 
+diff_to_yaml()
+{
+  while read line ; do
+    if [[ ${line/#-/} = $line && ${line/#+/} = $line ]]; then
+      echo "  ${line}: |-"
+    else
+      echo "    $line"
+    fi
+  done
+}
+
 echo "Running obsgendiff data differ..."
 
 # create changelogs based on the packaged rpms
@@ -131,16 +142,20 @@ for report in /.build.packages/OTHER/*.report \
     # The OBS publisher is publishing all ChangeLog.*.txt files by default.
     changelog=/.build.packages/OTHER/ChangeLog.${report##*/}
     changelog=${changelog%.report}
+    changelog_yaml=${changelog%.packages}.yaml
     changelog=${changelog%.packages}.txt
     echo ""> $changelog
-  
+    rm -f $changelog_yaml
+
     # removed packages
     echo "Removed rpms">> $changelog
     echo "============">> $changelog
     echo "">> $changelog
+    echo "removed:" >> $changelog_yaml
   
     find "$released/rpms/" -type f | sort | sed "s,^$released/rpms/,," | while read file; do
-      [ -e "${out}/rpms/$file" ] || echo " - ${file##*::}" >> $changelog
+      [ -e "${out}/rpms/$file" ] || echo " - ${file##*::}" | tee -a $changelog | \
+	      sed -e 's/^/ /' >> $changelog_yaml
     done
     echo "">> $changelog
   
@@ -148,8 +163,10 @@ for report in /.build.packages/OTHER/*.report \
     echo "Added rpms">> $changelog
     echo "==========">> $changelog
     echo "">> $changelog
+    echo "added:" >> $changelog_yaml
     find "$out/rpms/" -type f | sort | sed "s,^$out/rpms/,," | while read file; do
-      [ -e "${released}/rpms/$file" ] || echo " - ${file##*::}" >> $changelog
+      [ -e "${released}/rpms/$file" ] || echo " - ${file##*::}" | tee -a $changelog | \
+	      sed -e 's/^/ /' >> $changelog_yaml
     done
     echo "">> $changelog
   
@@ -157,14 +174,23 @@ for report in /.build.packages/OTHER/*.report \
     echo "Package Source Changes">> $changelog
     echo "======================">> $changelog
     echo "">> $changelog
+    echo "changed:" >> $changelog_yaml
     # poor mans changelog generation
     diff -ur "${released}/changelogs/" "$out/changelogs/" \
     | grep -v '^Only in ' \
     | grep '^[+-]' \
     | grep -v '^--- ' \
-    | sed -e's,^+++ .*/\([^\t]*\).*$,\1,' -e 's,^::import::.*::,,' \
-    >> $changelog
+    | sed -e's,^+++ .*/\([^\t]*\).*$,\1,' -e 's,^::import::.*::,,' | \
+    tee -a $changelog | diff_to_yaml >> $changelog_yaml
   fi
+
+  echo "" >> $changelog
+  echo "References" >> $changelog
+  echo "==========" >> $changelog
+  echo "" >> $changelog
+  echo "references:" >> $changelog_yaml
+  sed -n -r -e 's/(.*)(CVE-[[:digit:]]{4}-[[:digit:]]{4})(.*)/\2/p' $changelog | \
+  sort -u | sed -e 's/^/ - /' | tee -a $changelog | sed -e 's/^/ /' >> $changelog_yaml
 
 done
 
