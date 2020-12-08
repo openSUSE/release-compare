@@ -35,7 +35,10 @@ diff_to_yaml()
     if [[ ${line/#-/} = $line && ${line/#+/} = $line ]]; then
       echo "  ${line}: |-"
     else
-      echo "    $line"
+      # supress deletions (should not really exist)
+      if [[ ${line:0:1} != "-" ]] ; then
+        echo "    ${line:1}"
+      fi
     fi
   done
 }
