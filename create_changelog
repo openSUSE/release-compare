@@ -177,7 +177,7 @@ for report in /.build.packages/OTHER/*.report \
     echo "Package Source Changes">> $changelog
     echo "======================">> $changelog
     echo "">> $changelog
-    echo "changed:" >> $changelog_yaml
+    echo "source-changes:" >> $changelog_yaml
     # poor mans changelog generation
     diff -ur "${released}/changelogs/" "$out/changelogs/" \
     | grep -v '^Only in ' \
@@ -185,15 +185,23 @@ for report in /.build.packages/OTHER/*.report \
     | grep -v '^--- ' \
     | sed -e's,^+++ .*/\([^\t]*\).*$,\1,' -e 's,^::import::.*::,,' | \
     tee -a $changelog | diff_to_yaml >> $changelog_yaml
-  fi
 
-  echo "" >> $changelog
-  echo "References" >> $changelog
-  echo "==========" >> $changelog
-  echo "" >> $changelog
-  echo "references:" >> $changelog_yaml
-  sed -n -r -e 's/(.*)(CVE-[[:digit:]]{4}-[[:digit:]]{4})(.*)/\2/p' $changelog | \
-  sort -u | sed -e 's/^/ - /' | tee -a $changelog | sed -e 's/^/ /' >> $changelog_yaml
+    # version changes of binary packages
+    echo "version-changes:"  >> $changelog_yaml
+    find "$out/rpms/" -type f | sort | sed "s,^$out/rpms/,," | while read file; do
+      [ -e "${released}/rpms/$file" ] && { echo "  ${file##*::}:" ; \
+      LC_ALL=C.UTF-8 rpm -q "${file##*::}"  --dbpath /.build.packages/KIWIROOT*/var/lib/rpm \
+                         --queryformat "    version: %{VERSION}\n    build: %{RELEASE}\n" ; }
+      done >> $changelog_yaml
+
+    echo "" >> $changelog
+    echo "References" >> $changelog
+    echo "==========" >> $changelog
+    echo "" >> $changelog
+    echo "references:" >> $changelog_yaml
+    sed -n -r -e 's/(.*)(CVE-[[:digit:]]{4}-[[:digit:]]{4})(.*)/\2/p' $changelog | \
+    sort -u | sed -e 's/^/ - /' | tee -a $changelog | sed -e 's/^/ /' >> $changelog_yaml
+  fi
 
 done
 
