@@ -33,14 +33,23 @@ diff_to_yaml()
 {
   while read line ; do
     if [[ ${line/#-/} = $line && ${line/#+/} = $line ]]; then
-      echo "  ${line}: |-"
+      echo -e -n "$closer"
+      echo -n "  ${line}: \""
+      closer="\"\n"
+      opener=""
     else
       # supress deletions (should not really exist)
       if [[ ${line:0:1} != "-" ]] ; then
-        echo "    ${line:1}"
+        line="${line:1}"
+        line="${line//\"/\\\"/}"
+        if [ -n "$line" ]; then
+          echo -e -n "${opener}${line}"
+          opener='\\n'
+        fi
       fi
     fi
   done
+  echo -n -e "$closer"
 }
 
 echo "Running obsgendiff data differ..."
