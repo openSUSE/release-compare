@@ -33,14 +33,23 @@ diff_to_yaml()
 {
   while read line ; do
     if [[ ${line/#-/} = $line && ${line/#+/} = $line ]]; then
-      echo "  ${line}: |-"
+      echo -e -n "$closer"
+      echo -n "  ${line}: \""
+      closer="\"\n"
+      opener=""
     else
       # supress deletions (should not really exist)
       if [[ ${line:0:1} != "-" ]] ; then
-        echo "    ${line:1}"
+        line="${line:1}"
+        line="${line//\"/\\\"/}"
+        if [ -n "$line" ]; then
+          echo -e -n "${opener}${line}"
+          opener='\\n'
+        fi
       fi
     fi
   done
+  echo -n -e "$closer"
 }
 
 echo "Running obsgendiff data differ..."
@@ -97,7 +106,7 @@ for report in /.build.packages/OTHER/*.report \
   fi
 
   if [ -n "$PACKAGES_MODE" ]; then
-    sed -n -e "s,\([^|]*\)|\([^|]*\)|\([^|]*\)|\([^|]*\)|\([^|]*\)|\(obs://[^-]*-[^|]*\)|.*,\6::::\1-\3-\4.\5.rpm," -e "s,^obs://.*/[^-]*-,,p" "$report"
+    sed -n -e "s,\([^|]*\)|\([^|]*\)|\([^|]*\)|\([^|]*\)|\([^|]*\)|\(obs://[^-]*-[^|]*\)|\?.*,\6::::\1-\3-\4.\5.rpm," -e "s,^obs://.*/[^-]*-,,p" "$report"
   else
    # product-builder uses single quote, but bs_worker writes it with double quote...
    sed -n -e "s,.*<binary .*disturl=.\(obs://[^-]*-[^ ]*\). .*>.*/\(.*\)</binary>$,\1::::\2," -e 's,.*/[^-]*-\(.*::::.*\),\1,p' "$report"
