@@ -41,6 +41,7 @@ diff_to_yaml()
       # supress deletions (should not really exist)
       if [[ ${line:0:1} != "-" ]] ; then
         line="${line:1}"
+        line="${line//\\/\\\\/}"
         line="${line//\"/\\\"/}"
         if [ -n "$line" ]; then
           echo -e -n "${opener}${line}"
