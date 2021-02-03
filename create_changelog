@@ -28,6 +28,7 @@ out=/.build.packages/obsgendiff
 released=/.build.packages/obsgendiff.released
 
 eol=$'\n'
+shopt -s extglob
 
 diff_to_yaml()
 {
@@ -94,7 +95,7 @@ for report in /.build.packages/OTHER/*.report \
   oldobsgendiff="${oldobsgendiff##* }"
   if [ ! -e "$oldobsgendiff" ]; then
     # try to guess where the version is in the string, no guarantee
-    oldobsgendiff=`echo $oldobsgendiff | sed 's,-[0123456789.]*-,-[0123456789\.]*-,'`
+    oldobsgendiff=`echo $oldobsgendiff | sed 's,-[0123456789.]*-,-*([0123456789.])-,'`
     oldobsgendiff=`echo $oldobsgendiff`
     oldobsgendiff="${oldobsgendiff##* }"
   fi
@@ -209,7 +210,7 @@ for report in /.build.packages/OTHER/*.report \
     echo "==========" >> $changelog
     echo "" >> $changelog
     echo "references:" >> $changelog_yaml
-    sed -n -r -e 's/(.*)(CVE-[[:digit:]]{4}-[[:digit:]]{4})(.*)/\2/p' $changelog | \
+    grep -E -v '^-' $changelog | sed -n -r -e 's/(.*)(CVE-[[:digit:]]{4}-[[:digit:]]{4}[[:digit:]]*)(.*)/\3/pg' | \
     sort -u | sed -e 's/^/ - /' | tee -a $changelog | sed -e 's/^/ /' >> $changelog_yaml
   fi
 
