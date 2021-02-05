@@ -210,7 +210,7 @@ for report in /.build.packages/OTHER/*.report \
     echo "==========" >> $changelog
     echo "" >> $changelog
     echo "references:" >> $changelog_yaml
-    grep -E -v '^-' $changelog | sed -n -r -e 's/(.*)(CVE-[[:digit:]]{4}-[[:digit:]]{4}[[:digit:]]*)(.*)/\3/pg' | \
+    grep -E -v '^-' $changelog | sed -n -r -e 's/(.*)(CVE-[[:digit:]]{4}-[[:digit:]]{4}[[:digit:]]*)(.*)/\2/pg' | \
     sort -u | sed -e 's/^/ - /' | tee -a $changelog | sed -e 's/^/ /' >> $changelog_yaml
   fi
 
