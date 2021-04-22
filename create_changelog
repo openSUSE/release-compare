@@ -117,6 +117,8 @@ for report in /.build.packages/OTHER/*.report \
      # rpm file name
      rpm="${line##*::::}"
      rpm_name=${rpm%-[^-]*-[^-]*.rpm}
+     rpm_version=${rpm#${rpm_name}-}
+     rpm_version=${rpm_version%.*.rpm}
      # source package name
      srcname="${line%::::*}"
      # strip dot suffix from maintenance incidents
@@ -135,7 +137,7 @@ for report in /.build.packages/OTHER/*.report \
      # dump changelog for into source package name to avoid duplicates
      # hide "first" lines to hide email adresses
      LC_ALL=C.UTF-8 rpm -qp "$file" --changelog --nodigest --nosignature 2>/dev/null | sed '/^\* .*@.*/d' > $out/changelogs/${srcname}
-     touch $out/rpms/${rpm_name}
+     echo -n "${rpm_version}" > $out/rpms/${rpm_name}
   done
 
   # create archive
@@ -200,9 +202,15 @@ for report in /.build.packages/OTHER/*.report \
     # version changes of binary packages
     echo "version-changes:"  >> $changelog_yaml
     find "$out/rpms/" -type f | sort | sed "s,^$out/rpms/,," | while read file; do
-      [ -e "${released}/rpms/$file" ] && { echo "  ${file##*::}:" ; \
-      LC_ALL=C.UTF-8 rpm -q "${file##*::}"  --dbpath /.build.packages/KIWIROOT*/var/lib/rpm \
-                         --queryformat "    version: %{VERSION}\n    build: %{RELEASE}\n" ; }
+      if [ -e "${released}/rpms/$file" ]; then
+        current_version=`cat ${out}/rpms/${file}`
+        released_version=`cat ${released}/rpms/${file}`
+        if [ "$current_version" != "$released_version" ] ; then
+          echo "  ${file##*::}:"
+          LC_ALL=C.UTF-8 rpm -q "${file##*::}"  --dbpath /.build.packages/KIWIROOT*/var/lib/rpm \
+                         --queryformat "    version: %{VERSION}\n    build: %{RELEASE}\n"
+        fi
+      fi
       done >> $changelog_yaml
 
     echo "" >> $changelog
