@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/python3
 
-# Copyright (c) 2020 Adrian Schröter <adrian@suse.de>
+# Copyright (c) 2023 SUSE Software Solutions
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Library General Public
@@ -17,213 +17,19 @@
 # write to the Free Software Foundation, Inc., 59 Temple Place,
 # Suite 330, Boston, MA  02111-1307, USA
 
-#
-# This just basic demo code for now, to be rewritten/completed later
-#
+import argparse
+import release_compare
+from release_compare.version import __version__
 
-
-# our outut directory
-out=/.build.packages/obsgendiff
-# the former output of last released build
-released=/.build.packages/obsgendiff.released
-
-eol=$'\n'
-shopt -s extglob
-
-diff_to_yaml()
-{
-  while read line ; do
-    if [[ ${line/#-/} = $line && ${line/#+/} = $line ]]; then
-      echo -e -n "$closer"
-      echo -n "  ${line}: \""
-      closer="\"\n"
-      opener=""
-    else
-      # supress deletions (should not really exist)
-      if [[ ${line:0:1} != "-" ]] ; then
-        line="${line:1}"
-        line="${line//\\/\\\\/}"
-        line="${line//\"/\\\"/}"
-        if [ -n "$line" ]; then
-          echo -e -n "${opener}${line}"
-          opener='\\n'
-        fi
-      fi
-    fi
-  done
-  echo -n -e "$closer"
-}
-
-echo "Running obsgendiff data differ..."
-
-# create changelogs based on the packaged rpms
-mkdir -p $out/{rpms,changelogs}
-for report in /.build.packages/OTHER/*.report \
-  /.build.packages/KIWI/*.packages \
-  /.build.packages/DOCKER/*.packages; do
-
-  [ -e "$report" ] || continue
-
-  # skip source and debug media
-  [ "$report" = "${report/-Media2/}" ] || continue
-  [ "$report" = "${report/-Media3/}" ] || continue
-
-  # we need to be able to handle .packages from kiwi appliances
-  # and .report files from product builds. Check which case we have.
-  unset PACKAGES_MODE
-  [ "$report" == "${report%.packages}" ] || PACKAGES_MODE=1
-
-  # find and extract right obsgendiff archive
-  oldobsgendiff=${report%.packages}
-  oldobsgendiff=${oldobsgendiff%.report}.obsgendiff
-  oldobsgendiff=/.build.packages/SOURCES/${oldobsgendiff##*/}
-  # find old obsgendiff with different build number.
-  # try to find a matching name and version first
-  if [ "${oldobsgendiff/-Build*-/}" != "$oldobsgendiff" ]; then
-    oldobsgendiff=`echo ${oldobsgendiff/-Build*-/-Build*-}`
-  elif [ "${oldobsgendiff/-Build*./}" != "$oldobsgendiff" ]; then
-    # kiwi appliance
-    oldobsgendiff=`echo ${oldobsgendiff/-Build*./-Build*.}`
-  elif [ "${oldobsgendiff/-Snapshot*-/}" != "$oldobsgendiff" ]; then
-    # Factory fallback, it gets named to custom -Snapshot file name
-    oldobsgendiff=`echo ${oldobsgendiff/-Build*-/-Snapshot*-}`
-  else
-    # Dropped build number fallback (eg Jump ftp tree)
-    oldobsgendiff=`echo ${oldobsgendiff/-Media1./-Build*-Media1.}`
-  fi
-  # take last one if multiple
-  oldobsgendiff="${oldobsgendiff##* }"
-  if [ ! -e "$oldobsgendiff" ]; then
-    # try to guess where the version is in the string, no guarantee
-    oldobsgendiff=`echo $oldobsgendiff | sed -r -e 's,-[0123456789]+(\.[0123456789]+)+-,-*([0123456789.])-,'`
-    oldobsgendiff=`echo $oldobsgendiff`
-    oldobsgendiff="${oldobsgendiff##* }"
-  fi
-  if [ -e "$oldobsgendiff" ]; then
-    echo "Extracting $oldobsgendiff"
-    mkdir -p "${released}"
-    tar xf "$oldobsgendiff" -C "${released}"
-  else
-    echo "WARNING no old obsgendiff found: $oldobsgendiff"
-  fi
-
-  if [ -n "$PACKAGES_MODE" ]; then
-    sed -n -e "s,\([^|]*\)|\([^|]*\)|\([^|]*\)|\([^|]*\)|\([^|]*\)|\(obs://[^-]*-[^|]*\)|\?.*,\6::::\1-\3-\4.\5.rpm," -e "s,^obs://.*/[^-]*-,,p" "$report"
-  else
-   # product-builder uses single quote, but bs_worker writes it with double quote...
-   sed -n -e "s,.*<binary .*disturl=.\(obs://[^-]*-[^ ]*\). .*>.*/\(.*\)</binary>$,\1::::\2," -e 's,.*/[^-]*-\(.*::::.*\),\1,p' "$report"
-  fi | while read line; do
-
-     # rpm file name
-     rpm="${line##*::::}"
-     rpm_name=${rpm%-[^-]*-[^-]*.rpm}
-     rpm_version=${rpm#${rpm_name}-}
-     rpm_version=${rpm_version%.*.rpm}
-     # source package name
-     srcname="${line%::::*}"
-     # strip dot suffix from maintenance incidents
-     srcname="${srcname%%.*}"
-
-     # only the worker knows where it was downloaded from....
-     # the disturl may contained a different build repo
-     file=`echo /.build.packages/SOURCES/repos/*/*/*/$rpm`
-     file="${file//${eol}*/}" # bash internal "head -n 1" to be faster
-     if [ ! -e "$file" ]; then
-       # appliance builds server side have the shorter structure
-       file=`echo /.build.packages/SOURCES/repos/*/*/${rpm_name}.rpm`
-       file="${file//${eol}*/}" # bash internal "head -n 1" to be faster
-     fi
-
-     # dump changelog for into source package name to avoid duplicates
-     # hide "first" lines to hide email adresses
-     LC_ALL=C.UTF-8 rpm -qp "$file" --changelog --nodigest --nosignature 2>/dev/null | sed '/^\* .*@.*/d' > $out/changelogs/${srcname}
-     echo -n "${rpm_version}" > $out/rpms/${rpm_name}
-  done
-
-  # create archive
-  pushd $out
-  gendiff=${report%.report}
-  gendiff=${gendiff%.packages}.obsgendiff
-  tar cfJ /.build.packages/OTHER/${gendiff##*/} .
-  popd
-
-  #
-  # All data is collected at this point
-  # Just generating the changelog files below.
-  #
-
-  # create diff to released archive
-  # NOTE: it had to be published or it won't exist
-  if [ -d "${released}" ]; then
-    # The OBS publisher is publishing all ChangeLog.*.txt files by default.
-    changelog=/.build.packages/OTHER/ChangeLog.${report##*/}
-    changelog=${changelog%.report}
-    changelog_yaml=${changelog%.packages}.yaml
-    changelog=${changelog%.packages}.txt
-    echo ""> $changelog
-    rm -f $changelog_yaml
-
-    # removed packages
-    echo "Removed rpms">> $changelog
-    echo "============">> $changelog
-    echo "">> $changelog
-    echo "removed:" >> $changelog_yaml
-  
-    find "$released/rpms/" -type f | sort | sed "s,^$released/rpms/,," | while read file; do
-      [ -e "${out}/rpms/$file" ] || echo " - ${file##*::}" | tee -a $changelog | \
-	      sed -e 's/^/ /' >> $changelog_yaml
-    done
-    echo "">> $changelog
-  
-    # new packages
-    echo "Added rpms">> $changelog
-    echo "==========">> $changelog
-    echo "">> $changelog
-    echo "added:" >> $changelog_yaml
-    find "$out/rpms/" -type f | sort | sed "s,^$out/rpms/,," | while read file; do
-      [ -e "${released}/rpms/$file" ] || echo " - ${file##*::}" | tee -a $changelog | \
-	      sed -e 's/^/ /' >> $changelog_yaml
-    done
-    echo "">> $changelog
-  
-    # changed packages based on used src rpm name only
-    echo "Package Source Changes">> $changelog
-    echo "======================">> $changelog
-    echo "">> $changelog
-    echo "source-changes:" >> $changelog_yaml
-    # poor mans changelog generation
-    diff -ur "${released}/changelogs/" "$out/changelogs/" \
-    | grep -v '^Only in ' \
-    | grep '^[+-]' \
-    | grep -v '^--- ' \
-    | sed -e's,^+++ .*/\([^\t]*\).*$,\1,' -e 's,^::import::.*::,,' | \
-    tee -a $changelog | diff_to_yaml >> $changelog_yaml
-
-    # version changes of binary packages
-    echo "version-changes:"  >> $changelog_yaml
-    find "$out/rpms/" -type f | sort | sed "s,^$out/rpms/,," | while read file; do
-      if [ -e "${released}/rpms/$file" ]; then
-        current_version=`cat ${out}/rpms/${file}`
-        released_version=`cat ${released}/rpms/${file}`
-        if [ "$current_version" != "$released_version" ] ; then
-          echo "  ${file##*::}:"
-          LC_ALL=C.UTF-8 rpm -q "${file##*::}"  --dbpath /.build.packages/KIWIROOT*/var/lib/rpm \
-                         --queryformat "    version: %{VERSION}\n    build: %{RELEASE}\n"
-        fi
-      fi
-      done >> $changelog_yaml
-
-    echo "" >> $changelog
-    echo "References" >> $changelog
-    echo "==========" >> $changelog
-    echo "" >> $changelog
-    echo "references:" >> $changelog_yaml
-    grep -E -v '^-' $changelog | sed -n -r -e 's/(.*)(CVE-[[:digit:]]{4}-[[:digit:]]{4}[[:digit:]]*)(.*)/\2/pg' | \
-    sort -u | sed -e 's/^/ - /' | tee -a $changelog | sed -e 's/^/ /' >> $changelog_yaml
-  fi
-
-done
-
-
-exit 0
-
+parser = argparse.ArgumentParser(
+    prog='create_changelog',
+    description='Generate change log data from image build'
+)
+parser.add_argument('--version', action='version', version=__version__)
+parser.add_argument(
+    '--root',
+    default='/.build.packages',
+    help="Root directory of packages build info [default: /.build.packages]"
+)
+args = parser.parse_args()
+release_compare.main(args.root)

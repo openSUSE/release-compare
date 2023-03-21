@@ -1,0 +1,16 @@
+format-version: "2"
+removed:
+- package0
+added:
+- package3
+source-changes:
+  package1: '* Wed Mar 1 2023 somebody@somewhere.com
+
+    - some other changes CVE-2022-1234'
+
+references:
+- CVE-2022-1234
+config-changes:
+  1.0.12:
+  - date: '2023-01-02T08:00:00'
+    change: 'some new image config change'
