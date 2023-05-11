@@ -1,0 +1,3 @@
+package1|(none)|1.2.3|1.2|x86_64|obs://build.host/standard/12345678-package1|license
+package2|(none)|2.3.1|3.2|x86_64|obs://build.host/Maintenance/12345678-package2.standard|license
+package3|(none)|3.2.3|1.11|x86_64|obs://build.host/standard/12345678-package3|license

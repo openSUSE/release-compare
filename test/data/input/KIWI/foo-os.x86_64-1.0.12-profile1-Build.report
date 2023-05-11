@@ -1,0 +1,5 @@
+<report version="1.0.12" release="1.1" buildtime="1640974042" disturl="obs://build.host/project/foo-os:profile1"> 
+  <binary name="package1" version="1.2.3" release="1.2" binaryarch="x86_64" disturl="obs://build.host/standard/12345678-package1" license="license" project="standard" repository="standard" package="package1" arch="x86_64"/>
+  <binary name="package2" version="2.3.1" release="3.2" binaryarch="x86_64" disturl="obs://build.host/standard/12345678-package2.standard" license="license" project="Maintenance" repository="standard" package="package2" arch="x86_64"/>
+  <binary name="package3" version="3.2.3" release="1.11" binaryarch="x86_64" disturl="obs://build.host/standard/12345678-package3" license="license" project="standard" repository="standard" package="package3" arch="x86_64"/>
+</report>

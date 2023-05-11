@@ -1,0 +1,21 @@
+Removed rpms
+============
+
+ - package0
+
+Added rpms
+==========
+
+ - package3
+
+Package Source Changes
+======================
+
+package1
++ * Wed Mar 1 2023 somebody@somewhere.com
++ - some other changes CVE-2022-1234
+
+References
+==========
+
+ - CVE-2022-1234
