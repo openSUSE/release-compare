@@ -1,7 +1,7 @@
 #
 # spec file for package release-compare
 #
-# Copyright (c) 2020 SUSE LLC
+# Copyright (c) 2023 SUSE LLC
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -15,7 +15,7 @@
 # Please submit bugfixes or comments via https://bugs.opensuse.org/
 #
 
-%{?!python_module:%define python_module() python-%{**} python3-%{**}}
+%{?!python_module:%define python_module() python3-%{**}}
 %define skip_python2 1
 Name:           release-compare
 Summary:        Release Compare Script
@@ -27,11 +27,14 @@ Release:        0
 Source:         %name-%version.tar.xz
 BuildArch:      noarch
 Requires:       python3-PyYAML
-BuildRequires:  fdupes
-BuildRequires:  python-rpm-macros
 BuildRequires:  %{python_module setuptools}
 BuildRequires:  %{python_module pytest}
 BuildRequires:  %{python_module PyYAML}
+BuildRequires:  fdupes
+BuildRequires:  python-rpm-macros
+Requires:       python3-release-compare
+
+%python_subpackages
 
 %description
 This package contains scripts to create changelog files relative
@@ -39,7 +42,6 @@ to last released result.
 
 Note: you need to use a releasetarget definition in your OBS repository
       to get this working. And the release target needs to have published binaries.
-
 
 %prep
 %setup -q
@@ -56,11 +58,13 @@ install -m 0755 create_changelog $RPM_BUILD_ROOT/usr/lib/build/obsgendiff.d/crea
 %check
 %pytest
 
-%files
+%files -n release-compare
 %license LICENSE
 %doc README.rst
+/usr/lib/build
+
+%files %{python_files}
 %{python_sitelib}/release_compare
 %{python_sitelib}/release_compare-%{version}*-info
-/usr/lib/build
 
 %changelog
