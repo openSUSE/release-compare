@@ -27,7 +27,6 @@ config = {
     'version': __version__,
     'license' : 'GPLv3+',
     'install_requires': [
-        'docopt',
         'PyYAML'
     ],
     'packages': ['release_compare'],
