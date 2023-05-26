@@ -28,7 +28,7 @@ import textwrap
 import traceback
 import yaml
 import xml.etree.ElementTree as ET
-from packaging import version as pkg_version
+from setuptools._vendor.packaging import version as pkg_version
 from urllib.parse import urlparse
 from release_compare.version import __log_version__
 
