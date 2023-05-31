@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 # Copyright (c) 2023 SUSE Software Solutions
 #
 # This library is free software; you can redistribute it and/or
