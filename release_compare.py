@@ -303,9 +303,11 @@ def extract_old_obsgendiff(report_file, outdir):
         LOG.debug(
             'no old obsgendiff found for "{}", trying for older versions'.format(image_name_full)
         )
-        version_match = re.search(r'-[0-9]+(\\.[0-9]+)+', obsgendiff_regex)
+        # matching in a regex string, so we need to match escapes as well, hence
+        # all the backslashes
+        version_match = re.search(r'-[0-9]+(\\\.[0-9]+)+\\-', obsgendiff_regex)
         if version_match:
-            obsgendiff_regex = r'{}-[0-9]+(\.[0-9]+)+{}'.format(
+            obsgendiff_regex = r'{}-[0-9]+(\.[0-9]+)+-{}'.format(
                 obsgendiff_regex[:version_match.start()],
                 obsgendiff_regex[version_match.end():]
             )
