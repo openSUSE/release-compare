@@ -400,12 +400,21 @@ def get_changelog_data(new_pkgs, new_changelogs, old_pkgs, old_changelogs):
         'removed': [],
         'added': [],
         'source-changes': {},
+        'version-changes': {},
         'references': [],
         'config-changes': {}
     }
 
     for pkg in new_pkgs:
-        if pkg not in old_pkgs:
+        for old_pkg in old_pkgs:
+            if pkg == old_pkg:
+                if pkg.version != old_pkg.version or pkg.release != old_pkg.release:
+                    cl_dict['version-changes'][pkg.name] = {
+                        'version': pkg.version,
+                        'build': pkg.release
+                    }
+                break
+        else:
             cl_dict['added'].append(pkg.name)
 
     for pkg in old_pkgs:
