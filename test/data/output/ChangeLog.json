@@ -19,5 +19,13 @@
         "change": "some new image config change"
       }
     ]
-  }
+  },
+  "version-changes": {
+    "package1": {
+      "build": "1.2",
+      "version": "1.2.3"},
+    "package2": {
+      "build": "3.2",
+      "version": "2.3.1"}
+   }
 }

@@ -14,3 +14,10 @@ config-changes:
   1.0.12:
   - date: '2023-01-02T08:00:00'
     change: 'some new image config change'
+version-changes:
+  package1:
+    build: "1.2"
+    version: "1.2.3"
+  package2:
+    build: "3.2"
+    version: "2.3.1"
