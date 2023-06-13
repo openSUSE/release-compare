@@ -25,9 +25,10 @@ Release:        0
 Source:         %name-%version.tar.xz
 BuildArch:      noarch
 Requires:       python3-PyYAML
-BuildRequires:  python3-setuptools
+Requires:       python3-setuptools
 BuildRequires:  python3-pytest
 BuildRequires:  python3-PyYAML
+BuildRequires:  python3-setuptools
 
 %description
 This package contains scripts to create changelog files relative

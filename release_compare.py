@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 # Copyright (c) 2023 SUSE Software Solutions
 #
 # This library is free software; you can redistribute it and/or
@@ -14,6 +16,7 @@
 # License along with this library; see the file COPYING.LIB. If not,
 # write to the Free Software Foundation, Inc., 59 Temple Place,
 # Suite 330, Boston, MA  02111-1307, USA
+import argparse
 import difflib
 import glob
 import json
@@ -30,7 +33,9 @@ import yaml
 import xml.etree.ElementTree as ET
 from setuptools._vendor.packaging import version as pkg_version
 from urllib.parse import urlparse
-from release_compare.version import __log_version__
+
+__version__ = '0.9.0'
+__log_version__ = '2'
 
 LOG = None
 CONFIG = None
@@ -298,9 +303,11 @@ def extract_old_obsgendiff(report_file, outdir):
         LOG.debug(
             'no old obsgendiff found for "{}", trying for older versions'.format(image_name_full)
         )
-        version_match = re.search(r'-[0-9]+(\\.[0-9]+)+', obsgendiff_regex)
+        # matching in a regex string, so we need to match escapes as well, hence
+        # all the backslashes
+        version_match = re.search(r'-[0-9]+(\\\.[0-9]+)+\\-', obsgendiff_regex)
         if version_match:
-            obsgendiff_regex = r'{}-[0-9]+(\.[0-9]+)+{}'.format(
+            obsgendiff_regex = r'{}-[0-9]+(\.[0-9]+)+-{}'.format(
                 obsgendiff_regex[:version_match.start()],
                 obsgendiff_regex[version_match.end():]
             )
@@ -393,12 +400,21 @@ def get_changelog_data(new_pkgs, new_changelogs, old_pkgs, old_changelogs):
         'removed': [],
         'added': [],
         'source-changes': {},
+        'version-changes': {},
         'references': [],
         'config-changes': {}
     }
 
     for pkg in new_pkgs:
-        if pkg not in old_pkgs:
+        for old_pkg in old_pkgs:
+            if pkg == old_pkg:
+                if pkg.version != old_pkg.version or pkg.release != old_pkg.release:
+                    cl_dict['version-changes'][pkg.name] = {
+                        'version': pkg.version,
+                        'build': pkg.release
+                    }
+                break
+        else:
             cl_dict['added'].append(pkg.name)
 
     for pkg in old_pkgs:
@@ -499,7 +515,7 @@ def get_config_changes(new_history_file, old_history):
     return config_changes
 
 
-def main(root) -> None:
+def create_changelog(root) -> None:
     global ROOT
     global CONFIG
     global LOG
@@ -614,3 +630,22 @@ def main(root) -> None:
                     os.path.join(ROOT, 'OTHER', changelog_name + '.json'),
                     changelog_data
                 )
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        prog='create_changelog',
+        description='Generate change log data from image build'
+    )
+    parser.add_argument('--version', action='version', version=__version__)
+    parser.add_argument(
+        '--root',
+        default='/.build.packages',
+        help="Root directory of packages build info [default: /.build.packages]"
+    )
+    args = parser.parse_args()
+    create_changelog(args.root)
+
+
+if __name__ == '__main__':
+    main()
