@@ -149,6 +149,9 @@ def get_packages_from_report_file(report_file):
     for item in root.findall('./binary'):
         pkg_name = item.get('name')
         if pkg_name:
+            repo=None
+            if item.get('project') and item.get('repository'):
+                repo=os.path.join(item.get('project'), item.get('repository'))
             pkgs.append(
                 PackageInfo(
                     name=pkg_name,
@@ -156,7 +159,7 @@ def get_packages_from_report_file(report_file):
                     release=item.get('release'),
                     arch=item.get('binaryarch'),
                     source=item.get('disturl'),
-                    repo=os.path.join(item.get('project'), item.get('repository'))
+                    repo=repo
                 )
             )
 
@@ -286,11 +289,18 @@ def extract_old_obsgendiff(report_file, outdir):
             re.escape(image_name_full[build_match.end():])
         )
     else:
-        # no build number fallback (e.g. Jump ftp tree)
+        # no build number fallback (e.g. released Jump ftp tree)
         LOG.debug('{} does not contain a build number'.format(report_file))
+        directory_name = report_file[:-7]
         if image_name_full.endswith('-Media1'):
-            obsgendiff_regex = r'{}-Build[0-9]+(\.[0-9]+)-Media1.obsgendff'.format(
+            # product-builder case
+            obsgendiff_regex = r'{}-Build[0-9]+(\.[0-9]+)-Media1.obsgendiff'.format(
                 re.escape(image_name_full[:-7])
+            )
+        elif os.path.isdir(directory_name) and not directory_name.endswith("-Source") and not directory_name.endswith("-Debug"):
+            # product-composer case
+            obsgendiff_regex = r'{}.obsgendiff'.format(
+                re.escape(directory_name)
             )
         else:
             LOG.warning(
@@ -531,11 +541,12 @@ def create_changelog(root) -> None:
     report_files = glob.glob(os.path.join(ROOT, 'OTHER', '*.report'))
     report_files += glob.glob(os.path.join(ROOT, 'KIWI', '*.packages'))
     report_files += glob.glob(os.path.join(ROOT, 'DOCKER', '*.packages'))
+    report_files += glob.glob(os.path.join(ROOT, 'PRODUCT', '*.report'))
 
     os.makedirs(os.path.join(ROOT, 'OTHER'), exist_ok=True)
 
     for report in report_files:
-        if '-Media2' in report or '-Media3' in report:
+        if '-Media2' in report or '-Media3' in report or '-Debug' in report or '-Source' in report:
             # skip source and debug media
             continue
 
